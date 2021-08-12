@@ -77,9 +77,12 @@ class InstaBot():
         options.binary_location = ""
         self.driver = webdriver.Chrome(options=options)
         self.driver.set_window_size(1200, 700)
+        self.idealPostTime = '12:00 PM'
 
-    def login(self):
-        self.bot.login(username=self.username, password=self.password)
+    def 
+
+    def login(self,proxy=None):
+        self.bot.login(username=self.username, password=self.password,proxy=proxy)
 
     def getPostCount(self):
         return(len(next(os.walk(os.getcwd()+'\posts'))[1]))
@@ -114,26 +117,27 @@ class InstaBot():
                     wait_for_reply = True
                     break
 
+            approval = False
             while(wait_for_reply):
-                print(self.bot.get_messages())
-                print(self.bot.last_json["inbox"])
-                print(self.bot.last_json["inbox"]["viewer"])
-                print(self.bot.last_json["inbox"]["viewer"]["username"])
-                # if self.bot.api.get_inbox_v2():
-                #     data = self.bot.last_json["inbox"]["threads"]
-                #     for item in data:
-                #         print(item)
-                #         print(item["inviter"]["username"])
-                #         user_id = str(item["inviter"]["pk"])
-                #         last_item = item["last_permanent_item"]
-                #         item_type = last_item["item_type"]
-                #         print(item_type)
-                #         if item_type == "text":
-                #             print(last_item["text"])
-                break
-                # for message in self.bot.get_messages():
-                #     message.
-                #     print(message)
+                messages = self.bot.get_messages()
+                dms = messages['inbox']
+                threads = dms['threads'][0]
+                last_message = threads['last_permanent_item']
+                #print(last_message)
+                if('text' in last_message.keys()):
+                    text = last_message['text']
+                    print(text)
+                    if(not(approval)):
+                        if(text.lower() == 'yes'):
+                            approval=True
+                        elif(text.lower() == 'no'):
+                            approval=True
+                            break
+                    elif(text.lower() != 'yes'):
+                        self.bot.upload_photo(img,caption=text)
+                        wait_for_reply = False
+
+                time.sleep(2)
 
         else:
             self.bot.upload_photo(img,caption=caption)
