@@ -1,3 +1,4 @@
+import datetime
 import random
 import time
 from os import remove
@@ -79,7 +80,6 @@ class InstaBot():
         self.driver.set_window_size(1200, 700)
         self.idealPostTime = '12:00 PM'
 
-    def 
 
     def login(self,proxy=None):
         self.bot.login(username=self.username, password=self.password,proxy=proxy)
@@ -98,6 +98,15 @@ class InstaBot():
         with Image.open(img) as im:
             im = im.convert('RGB')
             im.save(img.split('.')[0]+'.jpg', 'JPEG')
+
+    def uploadPost(self): 
+        self.uploadPost()
+
+    def followAndUnfollow(self,where,amount=1,random=True):
+        #save list of people to never unfollow
+        #unfollow everyone else every few days
+        if(where):
+            pass
 
     def uploadPhoto(self,img,caption,request_approval=None,media_id=None,user=None):
         if(request_approval):
@@ -146,6 +155,116 @@ class InstaBot():
         messages = self.bot.get_messages()
         for message in messages:
             print(message)
+
+    def messageExists(self,user,message,start_time):
+        messages = self.bot.get_messages()
+        dms = messages['inbox']
+        threads = dms['threads'][0]
+        last_message = threads['last_permanent_item']
+        print(last_message)
+
+        timestamp = int(str(last_message['timestamp'])[:10])
+        converted_timestamp = datetime.datetime.fromtimestamp(timestamp)
+
+        if (converted_timestamp > start_time):
+            user_id = last_message['user_id']
+            username = self.bot.get_username_from_user_id(user_id)
+
+    def acceptIncomingPostDms(self, authorized_accounts, request_approval=True,caption_request=False):
+        monitor = True
+        wait_for_reply = True
+        start_time = datetime.datetime.today()
+        approval_started = False
+        approval = False
+        #print(start_time)
+
+        while(monitor):
+            messages = self.bot.get_messages()
+            dms = messages['inbox']
+            threads = dms['threads'][0]
+            #print(threads['users'])
+            #print(threads)
+            last_message = threads['last_permanent_item']
+            print(last_message)
+
+            timestamp = int(str(last_message['timestamp'])[:10])
+            converted_timestamp = datetime.datetime.fromtimestamp(timestamp)
+
+            if(converted_timestamp>start_time):
+                user_id = last_message['user_id']
+                username = self.bot.get_username_from_user_id(user_id)
+                #print(username)
+                if (username in authorized_accounts):
+                    if ('media_share' in last_message['item_type']):
+                            media = (last_message['media_share']['id']).split('_')[0]
+                            post_user = last_message['media_share']['user']['username']
+                            if(request_approval):
+                                self.bot.send_message(random.choice(['Want me to post this?','Should I post this?','Post?','Funny I guess, should i post it?','Good post?','Post worthy?']),[user_id])
+                                approval = False
+                                approval_started = True
+                    elif(approval_started):
+                        if ('text' in last_message.keys()):
+                            text = last_message['text']
+                            print(text)
+                            if(caption_request):
+                                if(not(approval)):
+                                    if (text.lower() == 'yes'):
+                                        approval = True
+                                        time.sleep(10)
+                                        self.bot.send_message(random.choice(
+                                            ['Caption?', 'What should the caption be?', 'Good caption?',
+                                             'Whats a good caption?', 'Funny caption?']), [user_id])
+                                    elif (text.lower() == 'no'):
+                                        break
+                                elif (text.lower() != 'yes'):
+                                    self.downloadPost(media, post_user, text, postNow=True)
+                                    break
+                            else:
+                                answer = text.lower()[:2]
+                                caption = text[6:]
+                                if(answer == 'ye'):
+                                    self.downloadPost(media, post_user, caption, postNow=True)
+                                    break
+                                elif(answer == 'no'):
+                                    break
+            time.sleep(5)
+
+    def downloadPost(self,media,user,caption,postNow=None):
+        instaLoad.login('vocabexpansion','FaTaLvocab!0212!')
+
+        single_post = True
+
+        username = user
+        dir = '/user_posts/' + username + '/'
+        dir1 = os.getcwd() + dir
+        #print(os.getcwd() + dir)
+        if not os.path.exists(dir1):
+            os.makedirs(dir1)
+        os.chdir(dir1)
+        #sameUserPosts = str(len(next(os.walk(dir1))) + 1)
+        sameUserPosts = sum(os.path.isdir(i) for i in os.listdir(dir1)) + 1
+        #print(sameUserPosts)
+        profile = instaloader.Profile.from_username(instaLoad.context, username)
+        posts = profile.get_posts()
+
+        count = 0
+        while (count != -1):
+            for post in posts:
+                #print(post.mediaid)
+                if (str(post.mediaid) == str(media)):
+                    if (post.is_video or (single_post and post.mediacount > 1)):
+                        count = 0
+                        postNum = int(random.randint(0, 100))
+                        break
+                    else:
+                        instaLoad.download_post(post, sameUserPosts)
+                        if(postNow):
+                            files = os.listdir(os.getcwd() + '/' + str(sameUserPosts) + '/')
+                            img_files = list(filter(lambda x: '.jpg' in x, files))
+                            self.uploadPhoto(os.getcwd() + '/' + str(sameUserPosts) + '/' + img_files[0], caption, user=user)
+                        return [post, sameUserPosts]
+                # print(count)
+                count += 1
 
     def downloadPhoto(self,usernames,photo=None,video=None,random_post=None,single_post=None):
 
